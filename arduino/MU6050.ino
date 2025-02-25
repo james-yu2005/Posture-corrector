@@ -1,10 +1,14 @@
 #include <Wire.h>
 
 const int MPU = 0x68;  // MPU6050 I2C address
+const int buttonPin = 2;  // the number of the pushbutton pin
 float AccX, AccY, AccZ;  // Accelerometer readings
 float GyroX, GyroY, GyroZ;  // Gyroscope readings
 
+int buttonState = 0;  // variable for reading the pushbutton status
+
 float kalmanAngleX, kalmanAngleY;  // Filtered angles
+float AngleX, AngleY;
 float absAngleX, absAngleY;
 float biasX = 0, biasY = 0;  // Gyro bias
 float P[2][2] = {{1, 0}, {0, 1}};  // Error covariance matrix
@@ -13,10 +17,15 @@ float dt = 0.01;  // Time step (10ms)
 float initial_x = 0, initial_y = 0;  // Initial angles
 bool initial_read = false;  // Flag to check if initial angles are set
 
+const int buzzerPin = 7;  // Pin for buzzer
+
 void setup() {
+  pinMode(buttonPin, INPUT);
+
   Serial.begin(19200);
   Wire.begin();
 
+  // Initialize MPU6050
   Wire.beginTransmission(MPU);
   Wire.write(0x6B);
   Wire.write(0x00);
@@ -24,6 +33,8 @@ void setup() {
 
   delay(1000);  // Allow MPU6050 to stabilize
   read_initial_data();  // Capture initial angles
+
+  pinMode(buzzerPin, OUTPUT);  // Set buzzer pin as output
 }
 
 void read_MPU6050_data() {
@@ -81,13 +92,30 @@ void loop() {
   P[1][1] -= K[1] * P[1][1];
 
   // Calculate absolute change from initial angles
-  absAngleX = kalmanAngleX - initial_x;
-  absAngleY = kalmanAngleY - initial_y;
+  AngleX = kalmanAngleX - initial_x;
+  AngleY = kalmanAngleY - initial_y;
+  absAngleX = abs(AngleX);
+  absAngleY = abs(AngleY);
 
   Serial.print("Roll Change: ");
   Serial.print(absAngleX);
   Serial.print(" | Pitch Change: ");
   Serial.println(absAngleY);
 
+  // If the absolute angle is above 20 degrees, activate the buzzer
+  if (absAngleX > 20 || absAngleY > 20) {
+    digitalWrite(buzzerPin, HIGH);  // Turn buzzer ON
+  } else {
+    digitalWrite(buzzerPin, LOW);  // Turn buzzer OFF
+  }
+
+  buttonState = digitalRead(buttonPin);
+  // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
+  if (buttonState == HIGH) {
+    read_initial_data();
+    kalmanAngleX = 0;
+    kalmanAngleY = 0;
+    Serial.println("Angles reset!");
+  }
   delay(10);
 }
