@@ -5,7 +5,7 @@
 
 // WiFi credentials
 const char* ssid = "wifi";       // Replace with your WiFi SSID
-const char* password = "pswd"; // Replace with your WiFi password
+const char* password = "pswd";   // Replace with your WiFi password
 
 // Create web server on port 80
 WebServer server(80);
@@ -16,7 +16,6 @@ WebServer server(80);
 // Registers
 #define PWR_MGMT_1 0x6B
 #define ACCEL_XOUT_H 0x3B
-#define GYRO_XOUT_H 0x43
 
 // Buzzer pin
 #define BUZZER_PIN 18  // Change to the pin connected to your buzzer
@@ -33,13 +32,9 @@ float initial_pitch = 0.0;
 // Threshold for change in angle
 float angle_threshold = 20.0;
 
-// Flags for different alert sources
-bool back_posture_alert = false;  // MPU6050 tilt detection
-bool neck_posture_alert = false;  // ML model web alerts
-
-// System mode control
-bool back_detection_enabled = true;
-bool neck_detection_enabled = true;
+// Flag for manual buzzer control
+bool manual_buzzer_override = false;
+bool manual_buzzer_state = false;
 
 void setup() {
   // Start serial communication
@@ -59,18 +54,9 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
-  // Initialize web server routes
-  server.on("/", handleRoot);
-  server.on("/buzzer/on", handleBuzzerOn);
-  server.on("/buzzer/off", handleBuzzerOff);
-  server.on("/neck/alert", handleNeckAlert);
-  server.on("/neck/clear", handleNeckClear);
-  server.on("/back/enable", handleBackEnable);
-  server.on("/back/disable", handleBackDisable);
-  server.on("/neck/enable", handleNeckEnable);
-  server.on("/neck/disable", handleNeckDisable);
-  server.on("/status", handleStatus);
-  server.onNotFound(handleNotFound);
+  // Initialize web server routes - only the minimal endpoints
+  server.on("/buzzer-on", handleBuzzerOn);
+  server.on("/buzzer-off", handleBuzzerOff);
   
   // Start server
   server.begin();
@@ -121,8 +107,12 @@ void loop() {
   // Handle client requests
   server.handleClient();
   
-  // Process MPU6050 data for back posture if enabled
-  if (back_detection_enabled) {
+  // If manual buzzer control is active, use that state
+  if (manual_buzzer_override) {
+    digitalWrite(BUZZER_PIN, manual_buzzer_state ? HIGH : LOW);
+  } 
+  else {
+    // Process MPU6050 data for back posture detection
     // Read accelerometer data
     Wire.beginTransmission(MPU6050_ADDR);
     Wire.write(ACCEL_XOUT_H);
@@ -141,183 +131,37 @@ void loop() {
     // Calculate the current roll and pitch angles
     roll = atan2(ay_g, az_g) * 180.0 / M_PI;
     pitch = atan2(-ax_g, sqrt(ay_g * ay_g + az_g * az_g)) * 180.0 / M_PI;
+    
+    // Debug output (optional)
+    Serial.print("Roll: ");
+    Serial.print(roll);
+    Serial.print("\tPitch: ");
+    Serial.println(pitch);
   
     // Determine if back posture alert should be active based on tilt
-    back_posture_alert = (fabs(roll - initial_roll) > angle_threshold || 
-                          fabs(pitch - initial_pitch) > angle_threshold);
+    bool bad_posture = (fabs(roll - initial_roll) > angle_threshold || 
+                         fabs(pitch - initial_pitch) > angle_threshold);
+                         
+    // Control the buzzer based on posture
+    digitalWrite(BUZZER_PIN, bad_posture ? HIGH : LOW);
   }
   
-  // Decide if buzzer should be on based on both alert sources
-  bool should_buzz = (back_posture_alert && back_detection_enabled) || 
-                      (neck_posture_alert && neck_detection_enabled);
-                      
-  // Control the buzzer
-  digitalWrite(BUZZER_PIN, should_buzz ? HIGH : LOW);
-  
   // Small delay to prevent CPU hogging
-  delay(50);
-}
-
-// Handle root page with control UI
-void handleRoot() {
-  String html = "<html><head>";
-  html += "<title>Posture Monitor System</title>";
-  html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
-  html += "<style>";
-  html += "body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }";
-  html += "button { background-color: #4CAF50; color: white; padding: 10px 20px; margin: 10px; border: none; border-radius: 4px; cursor: pointer; }";
-  html += "button.red { background-color: #f44336; }";
-  html += "button.blue { background-color: #2196F3; }";
-  html += "button.disabled { background-color: #cccccc; }";
-  html += ".section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }";
-  html += "table { margin: 0 auto; }";
-  html += "td { padding: 8px; }";
-  html += ".alert { color: red; font-weight: bold; }";
-  html += ".normal { color: green; font-weight: bold; }";
-  html += "</style>";
-  html += "<script>";
-  html += "function updateStatus() {";
-  html += "  fetch('/status')";
-  html += "    .then(response => response.json())";
-  html += "    .then(data => {";
-  html += "      document.getElementById('back_status').className = data.back_alert ? 'alert' : 'normal';";
-  html += "      document.getElementById('back_status').innerText = data.back_alert ? 'Poor Posture' : 'Good Posture';";
-  html += "      document.getElementById('neck_status').className = data.neck_alert ? 'alert' : 'normal';";
-  html += "      document.getElementById('neck_status').innerText = data.neck_alert ? 'Poor Posture' : 'Good Posture';";
-  html += "      document.getElementById('buzzer_status').innerText = data.buzzer_on ? 'ON' : 'OFF';";
-  html += "      document.getElementById('back_enabled').innerText = data.back_enabled ? 'Enabled' : 'Disabled';";
-  html += "      document.getElementById('neck_enabled').innerText = data.neck_enabled ? 'Enabled' : 'Disabled';";
-  html += "    });";
-  html += "}";
-  html += "setInterval(updateStatus, 1000);";
-  html += "updateStatus();";
-  html += "</script>";
-  html += "</head><body>";
-  html += "<h1>Posture Monitor System</h1>";
-  
-  html += "<div class='section'>";
-  html += "<h2>System Status</h2>";
-  html += "<table>";
-  html += "<tr><td>Back Posture:</td><td id='back_status'>Loading...</td></tr>";
-  html += "<tr><td>Neck Posture:</td><td id='neck_status'>Loading...</td></tr>";
-  html += "<tr><td>Buzzer:</td><td id='buzzer_status'>Loading...</td></tr>";
-  html += "</table>";
-  html += "</div>";
-  
-  html += "<div class='section'>";
-  html += "<h2>Buzzer Control</h2>";
-  html += "<button class='red' onclick='location.href=\"/buzzer/on\"'>Turn Buzzer ON</button>";
-  html += "<button class='blue' onclick='location.href=\"/buzzer/off\"'>Turn Buzzer OFF</button>";
-  html += "</div>";
-  
-  html += "<div class='section'>";
-  html += "<h2>Detection Systems</h2>";
-  html += "<table>";
-  html += "<tr>";
-  html += "<td>Back Sensor (MPU6050):</td>";
-  html += "<td id='back_enabled'>Loading...</td>";
-  html += "<td><button onclick='location.href=\"/back/enable\"'>Enable</button></td>";
-  html += "<td><button onclick='location.href=\"/back/disable\"'>Disable</button></td>";
-  html += "</tr>";
-  html += "<tr>";
-  html += "<td>Neck Detection (ML):</td>";
-  html += "<td id='neck_enabled'>Loading...</td>";
-  html += "<td><button onclick='location.href=\"/neck/enable\"'>Enable</button></td>";
-  html += "<td><button onclick='location.href=\"/neck/disable\"'>Disable</button></td>";
-  html += "</tr>";
-  html += "</table>";
-  html += "</div>";
-  
-  html += "</body></html>";
-  
-  server.send(200, "text/html", html);
+  delay(100);
 }
 
 // Turn the buzzer on manually
 void handleBuzzerOn() {
-  back_posture_alert = true;
-  neck_posture_alert = true;
-  server.sendHeader("Location", "/");
-  server.send(303);
+  manual_buzzer_override = true;
+  manual_buzzer_state = true;
+  server.send(200, "text/plain", "Buzzer turned ON");
+  Serial.println("Manual buzzer ON");
 }
 
 // Turn the buzzer off manually
 void handleBuzzerOff() {
-  back_posture_alert = false;
-  neck_posture_alert = false;
-  server.sendHeader("Location", "/");
-  server.send(303);
-}
-
-// Receive neck alert from ML model
-void handleNeckAlert() {
-  neck_posture_alert = true;
-  server.send(200, "text/plain", "Neck alert activated");
-}
-
-// Clear neck alert from ML model
-void handleNeckClear() {
-  neck_posture_alert = false;
-  server.send(200, "text/plain", "Neck alert cleared");
-}
-
-// Enable back posture detection
-void handleBackEnable() {
-  back_detection_enabled = true;
-  server.sendHeader("Location", "/");
-  server.send(303);
-}
-
-// Disable back posture detection
-void handleBackDisable() {
-  back_detection_enabled = false;
-  back_posture_alert = false;
-  server.sendHeader("Location", "/");
-  server.send(303);
-}
-
-// Enable neck posture detection
-void handleNeckEnable() {
-  neck_detection_enabled = true;
-  server.sendHeader("Location", "/");
-  server.send(303);
-}
-
-// Disable neck posture detection
-void handleNeckDisable() {
-  neck_detection_enabled = false;
-  neck_posture_alert = false;
-  server.sendHeader("Location", "/");
-  server.send(303);
-}
-
-// Handle status request (JSON response for AJAX updates)
-void handleStatus() {
-  String json = "{";
-  json += "\"back_alert\":" + String(back_posture_alert ? "true" : "false") + ",";
-  json += "\"neck_alert\":" + String(neck_posture_alert ? "true" : "false") + ",";
-  json += "\"buzzer_on\":" + String(digitalRead(BUZZER_PIN) == HIGH ? "true" : "false") + ",";
-  json += "\"back_enabled\":" + String(back_detection_enabled ? "true" : "false") + ",";
-  json += "\"neck_enabled\":" + String(neck_detection_enabled ? "true" : "false");
-  json += "}";
-  
-  server.send(200, "application/json", json);
-}
-
-// Handle 404 Not Found errors
-void handleNotFound() {
-  String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  
-  for (uint8_t i = 0; i < server.args(); i++) {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-  }
-  
-  server.send(404, "text/plain", message);
+  manual_buzzer_override = true;
+  manual_buzzer_state = false;
+  server.send(200, "text/plain", "Buzzer turned OFF");
+  Serial.println("Manual buzzer OFF");
 }
