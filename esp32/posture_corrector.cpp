@@ -3,11 +3,9 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-// WiFi credentials
 const char* ssid = "wifi";       // Replace with your WiFi SSID
 const char* password = "pswd";   // Replace with your WiFi password
 
-// Create web server on port 80
 WebServer server(80);
 
 // MPU6050 I2C address
@@ -17,13 +15,11 @@ WebServer server(80);
 #define PWR_MGMT_1 0x6B
 #define ACCEL_XOUT_H 0x3B
 
-// Buzzer pin
-#define BUZZER_PIN 18  // Change to the pin connected to your buzzer
+#define BUZZER_PIN 18 
 
 // Variables to store sensor data
 int16_t ax, ay, az;
 
-// Angles (in degrees)
 float roll = 0.0;
 float pitch = 0.0;
 float initial_roll = 0.0;
@@ -37,10 +33,8 @@ bool manual_buzzer_override = false;
 bool manual_buzzer_state = false;
 
 void setup() {
-  // Start serial communication
   Serial.begin(115200);
   
-  // Connect to WiFi
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi...");
   
@@ -54,27 +48,23 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
-  // Initialize web server routes - only the minimal endpoints
+  // Initialize web server routes
   server.on("/buzzer-on", handleBuzzerOn);
   server.on("/buzzer-off", handleBuzzerOff);
   
-  // Start server
   server.begin();
   Serial.println("HTTP server started");
   
-  // Initialize I2C communication
   Wire.begin();
   
   // Wake up the MPU6050
   Wire.beginTransmission(MPU6050_ADDR);
-  Wire.write(PWR_MGMT_1); // Wake up MPU6050
-  Wire.write(0); // Set to 0 to wake up the device
+  Wire.write(PWR_MGMT_1); 
+  Wire.write(0); 
   Wire.endTransmission(true);
   
-  // Initialize the buzzer pin
   pinMode(BUZZER_PIN, OUTPUT);
   
-  // Wait for a brief moment to ensure the MPU6050 is ready
   delay(100);
 
   // Read the initial accelerometer data to calculate the initial angles
@@ -87,7 +77,7 @@ void setup() {
   ay = (Wire.read() << 8) | Wire.read();
   az = (Wire.read() << 8) | Wire.read();
   
-  // Convert accelerometer data to 'g' (assuming the sensor is set to ±2g)
+  // Convert accelerometer data to 'g' (sensor is set to ±2g)
   float ax_g = ax / 16384.0;
   float ay_g = ay / 16384.0;
   float az_g = az / 16384.0;
@@ -96,7 +86,6 @@ void setup() {
   initial_roll = atan2(ay_g, az_g) * 180.0 / M_PI;
   initial_pitch = atan2(-ax_g, sqrt(ay_g * ay_g + az_g * az_g)) * 180.0 / M_PI;
 
-  // Print the initial angles to the serial monitor
   Serial.print("Initial Roll: ");
   Serial.print(initial_roll);
   Serial.print("\tInitial Pitch: ");
@@ -112,7 +101,6 @@ void loop() {
     digitalWrite(BUZZER_PIN, manual_buzzer_state ? HIGH : LOW);
   } 
   else {
-    // Process MPU6050 data for back posture detection
     // Read accelerometer data
     Wire.beginTransmission(MPU6050_ADDR);
     Wire.write(ACCEL_XOUT_H);
@@ -123,7 +111,7 @@ void loop() {
     ay = (Wire.read() << 8) | Wire.read();
     az = (Wire.read() << 8) | Wire.read();
   
-    // Convert accelerometer data to 'g' (assuming the sensor is set to ±2g)
+    // Convert accelerometer data to 'g' (sensor is set to ±2g)
     float ax_g = ax / 16384.0;
     float ay_g = ay / 16384.0;
     float az_g = az / 16384.0;
@@ -132,7 +120,6 @@ void loop() {
     roll = atan2(ay_g, az_g) * 180.0 / M_PI;
     pitch = atan2(-ax_g, sqrt(ay_g * ay_g + az_g * az_g)) * 180.0 / M_PI;
     
-    // Debug output (optional)
     Serial.print("Roll: ");
     Serial.print(roll);
     Serial.print("\tPitch: ");
@@ -142,7 +129,6 @@ void loop() {
     bool bad_posture = (fabs(roll - initial_roll) > angle_threshold || 
                          fabs(pitch - initial_pitch) > angle_threshold);
                          
-    // Control the buzzer based on posture
     digitalWrite(BUZZER_PIN, bad_posture ? HIGH : LOW);
   }
   
@@ -150,7 +136,6 @@ void loop() {
   delay(100);
 }
 
-// Turn the buzzer on manually
 void handleBuzzerOn() {
   manual_buzzer_override = true;
   manual_buzzer_state = true;
@@ -158,7 +143,6 @@ void handleBuzzerOn() {
   Serial.println("Manual buzzer ON");
 }
 
-// Turn the buzzer off manually
 void handleBuzzerOff() {
   manual_buzzer_override = true;
   manual_buzzer_state = false;
