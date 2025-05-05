@@ -1,23 +1,23 @@
 #include <Wire.h>
 
 const int MPU = 0x68;  // MPU6050 I2C address
-const int buttonPin = 2;  // the number of the pushbutton pin
+const int buttonPin = 2; 
 float AccX, AccY, AccZ;  // Accelerometer readings
 float GyroX, GyroY, GyroZ;  // Gyroscope readings
 
-int buttonState = 0;  // variable for reading the pushbutton status
+int buttonState = 0; 
 
 float kalmanAngleX, kalmanAngleY;  // Filtered angles
 float AngleX, AngleY;
 float absAngleX, absAngleY;
 float biasX = 0, biasY = 0;  // Gyro bias
 float P[2][2] = {{1, 0}, {0, 1}};  // Error covariance matrix
-float dt = 0.01;  // Time step (10ms)
+float dt = 0.01;  
 
-float initial_x = 0, initial_y = 0;  // Initial angles
+float initial_x = 0, initial_y = 0; 
 bool initial_read = false;  // Flag to check if initial angles are set
 
-const int buzzerPin = 7;  // Pin for buzzer
+const int buzzerPin = 7; 
 
 void setup() {
   pinMode(buttonPin, INPUT);
@@ -31,10 +31,10 @@ void setup() {
   Wire.write(0x00);
   Wire.endTransmission(true);
 
-  delay(1000);  // Allow MPU6050 to stabilize
-  read_initial_data();  // Capture initial angles
+  delay(1000);  
+  read_initial_data();  
 
-  pinMode(buzzerPin, OUTPUT);  // Set buzzer pin as output
+  pinMode(buzzerPin, OUTPUT);  
 }
 
 void read_MPU6050_data() {
@@ -104,13 +104,13 @@ void loop() {
 
   // If the absolute angle is above 20 degrees, activate the buzzer
   if (absAngleX > 20 || absAngleY > 20) {
-    digitalWrite(buzzerPin, HIGH);  // Turn buzzer ON
+    digitalWrite(buzzerPin, HIGH); 
   } else {
-    digitalWrite(buzzerPin, LOW);  // Turn buzzer OFF
+    digitalWrite(buzzerPin, LOW);  
   }
 
   buttonState = digitalRead(buttonPin);
-  // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
+  // check if the pushbutton is pressed. If it is, then reset all angles, which turns of buzzer
   if (buttonState == HIGH) {
     read_initial_data();
     kalmanAngleX = 0;
