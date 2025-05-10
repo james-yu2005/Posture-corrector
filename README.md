@@ -1,10 +1,19 @@
 # 🎯 Posture Corrector Device
 
-A wearable device that uses real-time sensor feedback and computer vision to promote proper posture.
+## 🎥 Demo Videos
+
+Explore both iterations in action:
+
+- ▶️ **ESP32 + OpenCV-based Posture Corrector (2nd Iteration)**  
+- ▶️ **Arduino-based Posture Corrector (1st Iteration)**
+
+📁 [Watch the Demo Videos on Google Drive](https://drive.google.com/drive/folders/1XhhxoisGqGbtTAvJfZo68UkWgdPwPm_9?usp=drive_link)
 
 ---
 
 ## 🧠 Overview
+
+A wearable device that uses real-time sensor feedback and computer vision to promote proper posture.
 
 This device monitors upper back and neck posture using an **MPU-6050** sensor and a custom **OpenCV** model. Upon detecting poor posture, it emits an audible alert via a buzzer to notify the user.
 
@@ -31,14 +40,3 @@ This device monitors upper back and neck posture using an **MPU-6050** sensor an
 
 - Designed a **custom PCB** to replace the breadboard, enhancing compactness, reliability, and ease of assembly.
 - A new **SolidWorks 3D enclosure** is in development for the updated hardware version.
-
----
-
-## 🎥 Demo Videos
-
-Explore both iterations in action:
-
-- ▶️ **ESP32 + OpenCV-based Posture Corrector (2nd Iteration)**  
-- ▶️ **Arduino-based Posture Corrector (1st Iteration)**
-
-📁 [Watch the Demo Videos on Google Drive](https://drive.google.com/drive/folders/1XhhxoisGqGbtTAvJfZo68UkWgdPwPm_9?usp=drive_link)
