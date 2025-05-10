@@ -23,3 +23,6 @@ The device monitors body and neck posture using an MPU-6050 sensor and computer 
 
 - A **custom PCB** was designed to replace the breadboard setup, making the device more compact, reliable, and easier to assemble.
 - A new **SolidWorks 3D enclosure** is currently being developed to house the updated PCB version.
+
+Check out the esp32 and openCV based posture corrector (second iteration): [https://drive.google.com/drive/folders/1XhhxoisGqGbtTAvJfZo68UkWgdPwPm_9?usp=drive_link]
+Check out arduino based posture corrector (first iteration)" []
