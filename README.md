@@ -1,28 +1,44 @@
-# Posture Corrector Device
+# 🎯 Posture Corrector Device
 
-This is a wearable posture corrector that uses real-time sensor feedback to encourage proper posture.
+A wearable device that uses real-time sensor feedback and computer vision to promote proper posture.
+
+---
 
 ## 🧠 Overview
 
-The device monitors body and neck posture using an MPU-6050 sensor and computer vision. When poor posture is detected, it emits a buzzing sound to alert the user.
+This device monitors upper back and neck posture using an **MPU-6050** sensor and a custom **OpenCV** model. Upon detecting poor posture, it emits an audible alert via a buzzer to notify the user.
 
-## 🔧 First Iteration
+---
+
+## 🔧 First Iteration (Prototype)
 
 - Built using an **Arduino Uno R3**, **MPU-6050**, and a **breadboard**.
-- Detected angular deviations in upper back posture and triggered a buzzer when slouching occurred.
+- Detected angular deviations in back posture and triggered a buzzer during slouching.
 
-## 🚀 Second Iteration
+---
 
-- Upgraded to an **ESP32** microcontroller for better performance and wireless capabilities.
-- Integrated the MPU-6050 with an **OpenCV model** using **MediaPipe** to track **neck posture** via calculated angles.
-- The OpenCV model runs on a connected device and sends posture data to the ESP32, which activates the buzzer if poor neck posture is detected.
-- A **3D-printed enclosure** was designed in **SolidWorks** to house the components and make the device wearable.
-- The computer vision code is available here: [OpenCV Posture Model](https://github.com/james-yu2005/posture_corrector_code)
+## 🚀 Second Iteration (Refined)
+
+- Upgraded to an **ESP32** microcontroller for wireless communication and improved performance.
+- Integrated an **OpenCV + MediaPipe** model to track **neck posture** using webcam input and calculate head tilt angles.
+- Real-time communication between OpenCV and ESP32 triggers the buzzer when poor neck posture is detected.
+- Designed a **3D-printed wearable enclosure** using **SolidWorks** to house the electronics.
+- 📂 Computer vision source code: [OpenCV Posture Model](https://github.com/james-yu2005/posture_corrector_code)
+
+---
 
 ## 🛠️ Hardware Improvements
 
-- A **custom PCB** was designed to replace the breadboard setup, making the device more compact, reliable, and easier to assemble.
-- A new **SolidWorks 3D enclosure** is currently being developed to house the updated PCB version.
+- Designed a **custom PCB** to replace the breadboard, enhancing compactness, reliability, and ease of assembly.
+- A new **SolidWorks 3D enclosure** is in development for the updated hardware version.
 
-Check out the esp32 and openCV based posture corrector (second iteration): [https://drive.google.com/drive/folders/1XhhxoisGqGbtTAvJfZo68UkWgdPwPm_9?usp=drive_link]
-Check out arduino based posture corrector (first iteration)" []
+---
+
+## 🎥 Demo Videos
+
+Explore both iterations in action:
+
+- ▶️ **ESP32 + OpenCV-based Posture Corrector (2nd Iteration)**  
+- ▶️ **Arduino-based Posture Corrector (1st Iteration)**
+
+📁 [Watch the Demo Videos on Google Drive](https://drive.google.com/drive/folders/1XhhxoisGqGbtTAvJfZo68UkWgdPwPm_9?usp=drive_link)
